@@ -65,40 +65,104 @@
 </div>
 
 <script>
-    let items = [];
-    let nextId = 1;
-
-    function renderList() {
-        const listBody = document.getElementById('listBody');
-        listBody.innerHTML = '';
-
-        items.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.text}</td>
-                <td><button onclick="removeItem(${index})">Remove</button></td>
-            `;
-            listBody.appendChild(row);
-        });
-    }
-
-    function addItem() {
+    async function addItem() {
         const newItemInput = document.getElementById('newItem');
         const newItemText = newItemInput.value.trim();
-
-        if (newItemText) {
-            items.push({ id: nextId++, text: newItemText });
-            newItemInput.value = '';
-            renderList();
+    
+        if (!newItemText) {
+            alert('Введите текст');
+            return;
+        }
+    
+        try {
+            const response = await fetch('/add-item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: newItemText })
+            });
+    
+            if (response.ok) {
+                newItemInput.value = '';
+                location.reload();
+            } else {
+                alert('Ошибка при добавлении элемента');
+            }
+        } catch (e) {
+            alert('Ошибка сети');
         }
     }
+    async function deleteItem(id) {
+    if (!confirm('Удалить этот элемент?')) return;
 
-    function removeItem(index) {
-        items.splice(index, 1);
-        renderList();
+    try {
+        const response = await fetch('/delete-item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+
+        if (response.ok) {
+            location.reload(); // Обновить страницу после удаления
+        } else {
+            alert('Ошибка при удалении элемента');
+        }
+    } catch {
+        alert('Ошибка сети');
     }
-</script>
+}
+async function deleteItem(id) {
+    if (!confirm('Удалить этот элемент?')) return;
+
+    try {
+        const response = await fetch('/delete-item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        if (response.ok) location.reload();
+        else alert('Ошибка при удалении элемента');
+    } catch {
+        alert('Ошибка сети');
+    }
+}
+
+function editItem(id) {
+    const td = document.getElementById(`text-${id}`);
+    const oldText = td.textContent;
+    td.innerHTML = `<input type="text" id="edit-input-${id}" value="${oldText}" /> <button onclick="saveEdit(${id})">Сохранить</button> <button onclick="cancelEdit(${id}, '${oldText}')">Отмена</button>`;
+}
+
+function cancelEdit(id, oldText) {
+    const td = document.getElementById(`text-${id}`);
+    td.textContent = oldText;
+}
+
+async function saveEdit(id) {
+    const input = document.getElementById(`edit-input-${id}`);
+    const newText = input.value.trim();
+    if (!newText) {
+        alert('Текст не может быть пустым');
+        return;
+    }
+
+    try {
+        const response = await fetch('/edit-item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, text: newText })
+        });
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Ошибка при сохранении');
+        }
+    } catch {
+        alert('Ошибка сети');
+    }
+}
+
+    </script>
+    
 
 </body>
 </html>
